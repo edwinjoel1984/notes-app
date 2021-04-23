@@ -1,48 +1,72 @@
 import {useState, useEffect} from 'react'
-import axios from "axios"
 import './App.css';
-
+import CreateNote from './components/CreateNote';
+import LoginForm from './components/LoginForm';
+import NoteList from './components/NoteList';
+import {login} from './services/login'
+import * as noteService from './services/notes'
 function App() {
   const [noteList, setNoteList] = useState([]);
   const [currentNote, setCurrentNote] = useState(null);
-  const [newNote, setNewNote] = useState({content: '', important: false});
-  
+  const [user, setUser] = useState(null)
+  const [errorLogin, setErrorLogin] = useState(false)
   useEffect(() => {
-    
     async function getNotes (){
-      const {data} = await axios.get('https://safe-wave-36858.herokuapp.com/api/notes');
+      const data = await noteService.getAllNotes();
       setNoteList(data)
     }
     getNotes();
     
   }, [])
 
-  const createNote = async ()=>{
-    console.log("Create")
-    const {data} = await axios.post('https://safe-wave-36858.herokuapp.com/api/notes', {
-      content: newNote.content,
-      important: newNote.important
-    })
+  useEffect(()=>{
+    const loggedUserJSON = window.localStorage.getItem('loggedNoteAppUser')
+    if(loggedUserJSON){
+      const user = JSON.parse(loggedUserJSON);
+      setUser(user);
+      noteService.setToken(user.token)
+
+    }
+  }, [])
+
+  const logout = () =>{
+    setUser(null);
+    noteService.setToken(null);
+    window.localStorage.removeItem('loggedNoteAppUser')
+  }
+
+
+  const createNote = async (evt , newNote)=>{
+    evt.preventDefault();
+    const data = await noteService.createNote(newNote);
     setNoteList([...noteList, data])
   }
   const updateNote = async ()=>{
-    console.log("Update")
-    const {data} = await axios.put('https://safe-wave-36858.herokuapp.com/api/notes/'+currentNote.id, {
-      content: currentNote.content,
-      important: currentNote.important
-    });
+    const data = await noteService.updateNote(currentNote);
     const temporalList = [...noteList];
     const currentIndex = temporalList.findIndex(note=>note.id===currentNote.id)
     if(currentIndex){
       temporalList.splice(currentIndex,1, data)
       setNoteList(temporalList)
     }
-      
-
   }
+
+  const toggleImportance = async (_note)=>{
+    const updatedNote = {..._note};
+    updatedNote.important = !updatedNote.important ;
+    const data = await noteService.updateNote(updatedNote);
+    const temporalList = [...noteList];
+    const currentIndex = temporalList.findIndex(note=>note.id===updatedNote.id)
+    if(currentIndex!==-1){
+      temporalList.splice(currentIndex,1, data)
+      setNoteList(temporalList)
+    }
+  }
+
+
   const deleteNote = async (_note)=>{
     if(window.confirm("Seguro que desea eliminar la Nota?")){
-      await axios.delete('https://safe-wave-36858.herokuapp.com/api/notes/'+_note.id)
+      await noteService.deleteNote(_note.id)
       const temporalList = [...noteList];
       const currentIndex = temporalList.findIndex(note=>note.id===_note.id)
       if(currentIndex){
@@ -51,29 +75,35 @@ function App() {
       }
     }
   }
+  const handleSubmit = async(event, username, password) =>{
+    event.preventDefault();
+    try{
+      const data = await login({username, password});
+      window.localStorage.setItem('loggedNoteAppUser', JSON.stringify(data))
+      noteService.setToken(data.token)
+      setUser(data);
+      setErrorLogin(false);
+      // setUsername('')
+      // setPassword('')
+    }catch(e){
+      setErrorLogin(true);
+      console.error("🚀 ~ file: App.js ~ line 67 ~ handleSubmit ~ e", e.response.data.error)      
+    }
+  }
   return (
     <div className="App">
-     <div className="createNote">
-        <h3>Create Note</h3>
-        <h4><b>Content</b>: <input value={newNote.content} onChange={(e)=>setNewNote({...newNote, content: e.target.value})}></input></h4>
-          <h4>
-            <b>Important</b>: 
-            <input type="checkbox"  
-              checked={newNote.important} 
-              onChange={()=>setNewNote({...newNote, important: !newNote.important})}/> 
-          </h4>
-          <button onClick={createNote}>Create Note</button>
-
-      </div>
-        <h1>
-          Note List
-        </h1>
-      <ul>
-        {noteList.map(note=>{
-          return <li key={note.id}>{note.content} <button onClick={()=>setCurrentNote(note)}>View</button><button onClick={()=>deleteNote(note)}>Delete</button></li>
-        })}
-      </ul>
-      <hr/>
+    {errorLogin && (
+      <div className='login-error'>Wrong Credentials</div>
+    )}
+    {user ? 
+      <CreateNote logout={logout} createNote={createNote}/> : 
+      <LoginForm handleSubmit={handleSubmit}/>
+    }
+    <NoteList 
+      noteList={noteList} 
+      setCurrentNote={setCurrentNote} 
+      deleteNote={deleteNote} 
+      toggleImportance={toggleImportance}/>
      
       {currentNote && (
         <div className="currentNote">

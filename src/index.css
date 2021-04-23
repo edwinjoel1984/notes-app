@@ -11,3 +11,13 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.App .login-error{
+  background-color: #d0d0d0;
+  border: 1px solid red;
+  border-radius: 4px;
+  padding: 10px;
+  font-weight: 700;
+  color: #da0f0f;
+  margin-bottom: 5px;
+}
