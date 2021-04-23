@@ -1,1 +1,5 @@
-{}
+{
+    "env": {
+        "BaseUrl":"https://notes-api-2021.herokuapp.com"
+     }
+}

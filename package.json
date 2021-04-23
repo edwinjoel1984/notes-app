@@ -21,14 +21,13 @@
     "test:e2e": "cypress run"
   },
   "eslintConfig": {
-    "env": {
-      "cypress/globals": true
-    },
     "extends": [
       "react-app",
       "react-app/jest"
     ],
-    "plugins": ["cypress"]
+    "plugins": [
+      "cypress"
+    ]
   },
   "browserslist": {
     "production": [
