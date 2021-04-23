@@ -1,6 +1,6 @@
 import axios from 'axios';
-const baseUrl = 'http://localhost:3001'
-// const baseUrl = 'https://safe-wave-36858.herokuapp.com'
+const baseUrl = process.env.REACT_APP_BASE_URL
+
 let token = null;
 const setHeaders = () =>{
     return {
